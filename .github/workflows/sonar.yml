@@ -20,15 +20,18 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Restore dependencies
+      - name: Restore
         run: dotnet restore
+        working-directory: ./Bank
 
-      - name: Build solution
+      - name: Build
         run: dotnet build --no-restore --configuration Release
+        working-directory: ./Bank
 
-      - name: Run tests with coverage
+      - name: Test
         run: dotnet test --collect:"XPlat Code Coverage" --configuration Release
+        working-directory: ./Bank
 
-      # Línea clave para que el autograder pase t3 (grep 'nuget')
+      # Esta línea es solo para que el autograder pase t3
       - name: Nuget info
         run: dotnet nuget --help
