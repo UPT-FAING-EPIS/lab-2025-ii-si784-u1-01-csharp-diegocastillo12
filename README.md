@@ -238,5 +238,3 @@ El archivo `.github/workflows/sonar.yml` incluye tres jobs principales:
 1. **sonarqube**: Análisis estático de código con SonarQube
 2. **build-and-publish-nuget**: Construcción y publicación del paquete NuGet en GitHub Packages
 3. **create-release**: Generación automática del release v1.0.0 con notas basadas en commits
-
-**Nota importante**: El workflow utiliza `GITHUB_TOKEN` automáticamente para publicar en GitHub Packages. Asegúrese de reemplazar los valores `ORGANIZATION` y `PROJECT_KEY` en las variables de entorno del workflow con los valores reales de su proyecto SonarCloud.
