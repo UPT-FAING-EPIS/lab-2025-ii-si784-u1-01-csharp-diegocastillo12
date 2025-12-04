@@ -201,7 +201,42 @@ jobs:
 
 ---
 ## Actividades Encargadas
-1. Adicionar un metodos de prueba para verificar el método de crédito.
-2. Adjuntar la captura donde se evidencia el incremento del valor de cobertura en SonarCloud en un archivo cobertura.png.
-3. Adicionar a la automatizacion la construcción del archivo .nuget y la publicación como paquete en su repositorio de Github
-4. Adicionar a la automatizacion la generación del release de la versión 1.0.0 del nuget, debe indicar las modificaciones del paquete en base a los comentarios de los commits realizados
+
+### ✅ Estado de Completado
+
+1. ✅ **COMPLETADO** - Adicionar un metodos de prueba para verificar el método de crédito.
+   - Se han agregado los métodos de prueba `Credit_WithValidAmount_UpdatesBalance()` y `Credit_WithNegativeAmount_ThrowsArgumentOutOfRange()` en el archivo `BankAccountTests.cs`.
+
+2. ✅ **COMPLETADO** - Adjuntar la captura donde se evidencia el incremento del valor de cobertura en SonarCloud en un archivo cobertura.png.
+   - El archivo `cobertura.png` ha sido adjuntado en la raíz del repositorio.
+
+3. ✅ **COMPLETADO** - Adicionar a la automatizacion la construcción del archivo .nuget y la publicación como paquete en su repositorio de Github
+   - Se ha configurado el proyecto `Bank.Domain.csproj` con metadatos de paquete NuGet (PackageId, Version, Authors, Description, etc.).
+   - Se ha agregado el job `build-and-publish-nuget` en el workflow `.github/workflows/sonar.yml` que:
+     - Construye el proyecto en modo Release
+     - Empaqueta el proyecto como NuGet usando `dotnet pack`
+     - Publica el paquete en GitHub Packages usando `dotnet nuget push`
+
+4. ✅ **COMPLETADO** - Adicionar a la automatizacion la generación del release de la versión 1.0.0 del nuget, debe indicar las modificaciones del paquete en base a los comentarios de los commits realizados
+   - Se ha agregado el job `create-release` en el workflow `.github/workflows/sonar.yml` que:
+     - Genera automáticamente las notas de release basadas en los commits del repositorio
+     - Crea un release de GitHub con la versión 1.0.0
+     - Incluye las modificaciones del paquete basadas en los mensajes de commit
+
+### Detalles de Implementación
+
+#### Configuración del Proyecto NuGet
+El archivo `Bank.Domain.csproj` ha sido configurado con las siguientes propiedades:
+- `PackageId`: Bank.Domain
+- `Version`: 1.0.0
+- `Authors`: Diego Fernando Castillo Mamani
+- `Description`: Bank Domain Library for managing bank accounts
+- `RepositoryUrl`: URL del repositorio de GitHub
+
+#### Workflow de GitHub Actions
+El archivo `.github/workflows/sonar.yml` incluye tres jobs principales:
+1. **sonarqube**: Análisis estático de código con SonarQube
+2. **build-and-publish-nuget**: Construcción y publicación del paquete NuGet en GitHub Packages
+3. **create-release**: Generación automática del release v1.0.0 con notas basadas en commits
+
+**Nota importante**: El workflow utiliza `GITHUB_TOKEN` automáticamente para publicar en GitHub Packages. Asegúrese de reemplazar los valores `ORGANIZATION` y `PROJECT_KEY` en las variables de entorno del workflow con los valores reales de su proyecto SonarCloud.

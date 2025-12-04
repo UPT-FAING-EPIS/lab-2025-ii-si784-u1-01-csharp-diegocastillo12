@@ -1,37 +1,96 @@
-name: Sonar & Tests
-
+name: Sonar Continuos Integration
+env:
+  DOTNET_VERSION: '8.x'                     # la versión de .NET
+  SONAR_ORG: 'ORGANIZATION'                    # Nombre de la organización de sonar cloud
+  SONAR_PROJECT: 'PROJECT_KEY'        # Key ID del proyecto de sonar
 on:
   push:
-    branches: [ "main" ]
-  pull_request:
     branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
-  build-test-sonar:
+  sonarqube:
+    name: Sonarqube Analisys
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for better commit analysis
+      - uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+      - name: Configurando la versión de NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
-
-      - name: Restore
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Instalar Scanner
+        run: dotnet tool install -g dotnet-sonarscanner
+      - name: Ejecutar pruebas
+        run: |
+          dotnet restore 
+          dotnet test --collect:"XPlat Code Coverage;Format=opencover"
+          dotnet-sonarscanner begin /k:"${{ env.SONAR_PROJECT }}" /o:"${{ env.SONAR_ORG }}" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="*/*/*/coverage.opencover.xml" /d:sonar.qualitygate.wait=true
+          dotnet build
+          dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+  
+  build-and-publish-nuget:
+    name: Build and Publish NuGet Package
+    runs-on: ubuntu-latest
+    needs: sonarqube
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Configurando la versión de NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+      - name: Restaurar dependencias
         run: dotnet restore
-        working-directory: ./Bank
-
-      - name: Build
-        run: dotnet build --no-restore --configuration Release
-        working-directory: ./Bank
-
-      - name: Test
-        run: dotnet test --collect:"XPlat Code Coverage" --configuration Release
-        working-directory: ./Bank
-
-      # Esta línea es solo para que el autograder pase t3
-      - name: Nuget info
-        run: dotnet nuget --help
+      - name: Construir el proyecto
+        run: dotnet build --configuration Release --no-restore
+      - name: Empaquetar NuGet
+        run: dotnet pack Bank/Bank.Domain/Bank.Domain.csproj --configuration Release --no-build --output ./nupkg
+      - name: Publicar paquete NuGet en GitHub Packages
+        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
+  
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    needs: build-and-publish-nuget
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Generar notas de release desde commits
+        id: release_notes
+        run: |
+          echo "## Cambios en la versión 1.0.0" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Modificaciones del paquete:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          git log --pretty=format:"- %s (%h)" --no-merges >> $GITHUB_STEP_SUMMARY || echo "- Versión inicial del paquete" >> $GITHUB_STEP_SUMMARY
+          NOTES=$(git log --pretty=format:"- %s (%h)%n" --no-merges | head -20)
+          if [ -z "$NOTES" ]; then
+            NOTES="- Versión inicial del paquete"
+          fi
+          {
+            echo "notes<<EOF"
+            echo "## Cambios en la versión 1.0.0"
+            echo ""
+            echo "### Modificaciones del paquete:"
+            echo ""
+            echo "$NOTES"
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+      - name: Crear Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v1.0.0
+          name: Release v1.0.0
+          body: ${{ steps.release_notes.outputs.notes }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

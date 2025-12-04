@@ -4,6 +4,13 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackageId>Bank.Domain</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>Diego Fernando Castillo Mamani</Authors>
+    <Description>Bank Domain Library for managing bank accounts</Description>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/UPT-FAING-EPIS/lab-2025-ii-si784-u1-01-csharp-diegocastillo12</RepositoryUrl>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
   </PropertyGroup>
 
 </Project>
