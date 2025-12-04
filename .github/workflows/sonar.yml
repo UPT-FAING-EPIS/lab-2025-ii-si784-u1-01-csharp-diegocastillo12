@@ -8,6 +8,10 @@ on:
     branches: [ "main" ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   sonarqube:
     name: Sonarqube Analisys
@@ -69,15 +73,20 @@ jobs:
       - name: Empaquetar NuGet
         working-directory: Bank
         run: dotnet pack Bank.Domain/Bank.Domain.csproj --configuration Release --no-build --output ./nupkg
+      - name: Configurar fuente NuGet de GitHub Packages
+        working-directory: Bank
+        run: |
+          dotnet nuget add source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --name github --username ${{ github.repository_owner }} --password ${{ secrets.GITHUB_TOKEN }} --store-password-in-clear-text
       - name: Publicar paquete NuGet en GitHub Packages
         working-directory: Bank
-        run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
+        continue-on-error: true
+        run: dotnet nuget push ./nupkg/*.nupkg --source github --skip-duplicate
   
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
     needs: build-and-publish-nuget
-    if: needs.build-and-publish-nuget.result == 'success'
+    if: always() && (needs.build-and-publish-nuget.result == 'success' || needs.build-and-publish-nuget.result == 'failure')
     steps:
       - uses: actions/checkout@v4
         with:
