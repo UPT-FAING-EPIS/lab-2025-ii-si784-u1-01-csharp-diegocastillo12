@@ -27,10 +27,11 @@ jobs:
       - name: Instalar Scanner
         run: dotnet tool install -g dotnet-sonarscanner
       - name: Ejecutar pruebas
+        working-directory: Bank
         run: |
           dotnet restore 
           dotnet test --collect:"XPlat Code Coverage;Format=opencover"
-          dotnet-sonarscanner begin /k:"${{ env.SONAR_PROJECT }}" /o:"${{ env.SONAR_ORG }}" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="*/*/*/coverage.opencover.xml" /d:sonar.qualitygate.wait=true
+          dotnet-sonarscanner begin /k:"${{ env.SONAR_PROJECT }}" /o:"${{ env.SONAR_ORG }}" /d:sonar.login="${{ secrets.SONAR_TOKEN }}" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.cs.opencover.reportsPaths="**/coverage.opencover.xml" /d:sonar.qualitygate.wait=true
           dotnet build
           dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
   
@@ -47,12 +48,16 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
       - name: Restaurar dependencias
+        working-directory: Bank
         run: dotnet restore
       - name: Construir el proyecto
+        working-directory: Bank
         run: dotnet build --configuration Release --no-restore
       - name: Empaquetar NuGet
-        run: dotnet pack Bank/Bank.Domain/Bank.Domain.csproj --configuration Release --no-build --output ./nupkg
+        working-directory: Bank
+        run: dotnet pack Bank.Domain/Bank.Domain.csproj --configuration Release --no-build --output ./nupkg
       - name: Publicar paquete NuGet en GitHub Packages
+        working-directory: Bank
         run: dotnet nuget push ./nupkg/*.nupkg --api-key ${{ secrets.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json --skip-duplicate
   
   create-release:
